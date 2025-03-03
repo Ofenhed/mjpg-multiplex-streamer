@@ -1,4 +1,7 @@
-use std::path::{Component, Path, PathBuf};
+use std::{
+    path::{Component, Path, PathBuf},
+    time::Duration,
+};
 
 use clap::{Args, ValueHint};
 
@@ -13,7 +16,13 @@ pub(crate) struct Arguments {
     pub filename: PathBuf,
 
     #[arg(long, default_value = None)]
-    pub max_fps: Option<u8>,
+    pub max_fps: Option<f32>,
+}
+
+impl Arguments {
+    pub fn max_fps_delay(&self) -> Option<Duration> {
+        self.max_fps.map(|fps| Duration::from_secs_f32(1f32 / fps))
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

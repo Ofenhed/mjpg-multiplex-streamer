@@ -1,4 +1,4 @@
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 use clap::Parser;
 use common_args::assert_filename_only;
@@ -45,10 +45,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .join(assert_filename_only(&args.working_filename)?);
 
     let mut counter = 0;
-    let sleep_duration = args
-        .shared
-        .max_fps
-        .map(|fps| Duration::from_millis(1000u64 / u64::from(fps)));
+    let sleep_duration = args.shared.max_fps_delay();
     let mut file_watch: Option<WatchDescriptor> = None;
     let mut file_accessed = true;
     let mut file_closed = true;

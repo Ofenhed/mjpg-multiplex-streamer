@@ -47,10 +47,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let mut stdout = tokio::io::stdout();
 
     let event_stream = inotify.as_event_stream()?;
-    let sleep_duration = args
-        .shared
-        .max_fps
-        .map(|fps| Duration::from_millis(1000u64 / u64::from(fps)));
+    let sleep_duration = args.shared.max_fps_delay();
     let async_first_sleep = async {
         tokio::time::sleep_until(Instant::now() + sleep_duration.unwrap_or(Duration::from_secs(1)))
             .await;
