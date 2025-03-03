@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use clap::Parser;
+use clap::{Parser, builder::TypedValueParser};
 use common_args::assert_filename_only;
 use inotify::{Inotify, WatchMask};
 use tokio::{fs::OpenOptions, io::AsyncWriteExt, select, time::Instant};
@@ -11,10 +11,55 @@ mod event_source;
 
 use event_source::EventSource;
 
+#[derive(Debug, Clone)]
+enum ListenType {
+    #[allow(dead_code)]
+    Port(u16),
+    Stdio,
+}
+
+#[derive(Clone, Copy)]
+struct ListenTypeParser;
+
+impl TypedValueParser for ListenTypeParser {
+    type Value = ListenType;
+
+    fn parse_ref(
+        &self,
+        cmd: &clap::Command,
+        arg: Option<&clap::Arg>,
+        value: &std::ffi::OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        if value == "stdio" {
+            Ok(ListenType::Stdio)
+        } else {
+            let inner = clap::value_parser!(u16);
+            let value = inner.parse_ref(cmd, arg, value)?;
+            Ok(ListenType::Port(value))
+        }
+    }
+
+    fn possible_values(
+        &self,
+    ) -> Option<Box<dyn Iterator<Item = clap::builder::PossibleValue> + '_>> {
+        Some(Box::new(
+            ["stdio", "port_number"]
+                .into_iter()
+                .map(clap::builder::PossibleValue::new),
+        ))
+    }
+}
+
 #[derive(Debug, Parser)]
 struct MjpgMultiplexOutput {
     #[command(flatten)]
     shared: common_args::Arguments,
+
+    #[arg(hide = true, env = "SD_LISTEN_FDS_START")]
+    systemd_listen_fds_start: Option<usize>,
+
+    #[arg(long, required_unless_present("systemd_listen_fds_start"), value_parser = ListenTypeParser)]
+    listen_port: Option<ListenType>,
 
     #[arg(long, required = true)]
     boundary: std::ffi::OsString,
